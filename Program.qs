@@ -1,5 +1,7 @@
 ﻿namespace QSharp.CertifiedDeletion {
 
+    open Microsoft.Quantum.Diagnostics;
+    open Microsoft.Quantum.Random;
     open Microsoft.Quantum.Logical;
     open Microsoft.Quantum.Arrays;
     open Microsoft.Quantum.Convert;
@@ -10,16 +12,17 @@
 
     @EntryPoint()
     operation Main(decryptFlow: Bool) : Unit {
-        let theta = [false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true];
+        let algorithm_size_limit = 16;
 
-        let r = [false, true, true, false, false, true, true, false, false, false, true, true, true, true, false, false];
+        let theta = CreateRandomBoolArrayWithEqualDistribution(algorithm_size_limit);
+        let r = DrawMany(() => DrawRandomBool(0.5), algorithm_size_limit, ());
 
-        use qubits = Qubit[16];
+        use qubits = Qubit[algorithm_size_limit];
 
         mutable r_z = [];
         mutable r_x = [];
 
-        for i in 0..15 {
+        for i in 0..algorithm_size_limit-1 {
             // X basis
             if theta[i] { 
                 if r[i] { // 1 is |->
@@ -49,7 +52,7 @@
 
         // let's pick something silly with 8 bit length to encrypt
         let message = 4; 
-        let binaryMessage = IntAsBoolArray(message, 8);
+        let binaryMessage = IntAsBoolArray(message, algorithm_size_limit / 2);
         Message($"Raw message: {BoolArrayAsBinaryString(binaryMessage)}");
 
         // encrypt by doing XOR between the message and r_z
@@ -73,7 +76,7 @@
         // decrypt using theta as key
         // first obtain r_z by measuring only the qubits that were encoded in the Z basis
         mutable r_z_from_measurement = [];
-        for i in 0..15 {
+        for i in 0..Length(theta) {
             if not theta[i] { 
                 set r_z_from_measurement += [M(qubits[i]) == One];
             }
@@ -89,7 +92,7 @@
 
     operation Delete(qubits: Qubit[]) : Bool[] {
         mutable deletion_proof = [];
-        for i in 0..15 {
+        for i in 0..Length(qubits) {
             set deletion_proof += [Measure([PauliX], [qubits[i]]) == One];
         }
 
@@ -98,7 +101,7 @@
 
     operation VerifyDeletion(theta: Bool[], d: Bool[]) : Unit {
         mutable d_x = [];
-        for i in 0..15 {
+        for i in 0..Length(theta) {
             if theta[i] {
                 set d_x += [d[i]];
             }
@@ -114,6 +117,25 @@
             set output += entry ? "1" | "0";
         }
         return output;
+    }
+
+    operation Shuffled<'T>(array : 'T[]) : 'T[] {
+        let n = Length(array);
+        mutable shuffled = array;
+
+        for i in 0..n - 2 {
+            let j = DrawRandomInt(i, n - 1);
+            set shuffled = Swapped(i, j, shuffled);
+        }
+
+        return shuffled;
+    }
+
+    operation CreateRandomBoolArrayWithEqualDistribution(size: Int) : Bool[] {
+        Fact(size % 2 == 0, "Size must be divisble by 2");
+        
+        let array = [true, size = size/2];
+        return Shuffled(Padded(-size, false, array));
     }
 }
 

@@ -76,7 +76,7 @@
         // decrypt using theta as key
         // first obtain r_z by measuring only the qubits that were encoded in the Z basis
         mutable r_z_from_measurement = [];
-        for i in 0..Length(theta) {
+        for i in 0..Length(theta)-1 {
             if not theta[i] { 
                 set r_z_from_measurement += [M(qubits[i]) == One];
             }
@@ -92,7 +92,7 @@
 
     operation Delete(qubits: Qubit[]) : Bool[] {
         mutable deletion_proof = [];
-        for i in 0..Length(qubits) {
+        for i in 0..Length(qubits)-1 {
             set deletion_proof += [Measure([PauliX], [qubits[i]]) == One];
         }
 
@@ -101,7 +101,7 @@
 
     operation VerifyDeletion(theta: Bool[], d: Bool[]) : Unit {
         mutable d_x = [];
-        for i in 0..Length(theta) {
+        for i in 0..Length(theta)-1 {
             if theta[i] {
                 set d_x += [d[i]];
             }

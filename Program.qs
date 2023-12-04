@@ -62,17 +62,18 @@
 
         if decryptFlow {
             // decrypt flow
-            Decrypt(qubits, theta, encrypted);
+            let decrypted = Decrypt(qubits, theta, encrypted);
+            AllEqualityFactB(decrypted, binaryMessage, "The decrypted message is different than the original one!");
         } else {
             // delete and verify flow
             let deletion_proof = Delete(qubits);
-            VerifyDeletion(theta, deletion_proof);
+            VerifyDeletion(theta, r_x, deletion_proof);
         }
 
         ResetAll(qubits);
     }
 
-    operation Decrypt(qubits: Qubit[], theta: Bool[], encrypted: Bool[]) : Unit {
+    operation Decrypt(qubits: Qubit[], theta: Bool[], encrypted: Bool[]) : Bool[] {
         // decrypt using theta as key
         // first obtain r_z by measuring only the qubits that were encoded in the Z basis
         mutable r_z_from_measurement = [];
@@ -88,6 +89,7 @@
 
         // the decrypted data should be identical to raw message
         Message($"Decrypted message: {BoolArrayAsBinaryString(decrypted)}");
+        return decrypted;
     }
 
     operation Delete(qubits: Qubit[]) : Bool[] {
@@ -99,7 +101,7 @@
         return deletion_proof;
     }
 
-    operation VerifyDeletion(theta: Bool[], d: Bool[]) : Unit {
+    operation VerifyDeletion(theta: Bool[], r_x: Bool[], d: Bool[]) : Unit {
         mutable d_x = [];
         for i in 0..Length(theta)-1 {
             if theta[i] {
@@ -109,6 +111,7 @@
 
         // now verify the deletion by comparing d_x to r_x - they must be identical
         Message($"R_x from qubits: {BoolArrayAsBinaryString(d_x)}");
+        AllEqualityFactB(d_x, r_x, "R_x obtained from measuring the qubits is different than the original one!");
     }
 
     function BoolArrayAsBinaryString(arr : Bool[]) : String {

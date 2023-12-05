@@ -1,5 +1,6 @@
 ﻿namespace QSharp.CertifiedDeletion {
 
+    open Microsoft.Quantum.Math;
     open Microsoft.Quantum.Diagnostics;
     open Microsoft.Quantum.Random;
     open Microsoft.Quantum.Logical;
@@ -11,18 +12,24 @@
     
 
     @EntryPoint()
-    operation Main(decryptFlow: Bool) : Unit {
-        let algorithm_size_limit = 16;
+    operation Main(message: Int, decryptFlow: Bool) : Unit {
+        // we can reasonably only simulate this in one shot for messages up to 8 bits
+        let message_bitsize = BitSizeI(message);
+        Fact(message_bitsize < 8, "We can't simulate for messages of more than 8 bits");
+        let algorithm_bitsize = 16;
 
-        let theta = CreateRandomBoolArrayWithEqualDistribution(algorithm_size_limit);
-        let r = DrawMany(() => DrawRandomBool(0.5), algorithm_size_limit, ());
+        Message($"Running the algorithm for message: {message}");
+        Message("");
 
-        use qubits = Qubit[algorithm_size_limit];
+        let theta = CreateRandomBoolArrayWithEqualDistribution(algorithm_bitsize);
+        let r = DrawMany(() => DrawRandomBool(0.5), algorithm_bitsize, ());
+
+        use qubits = Qubit[algorithm_bitsize];
 
         mutable r_z = [];
         mutable r_x = [];
 
-        for i in 0..algorithm_size_limit-1 {
+        for i in 0..algorithm_bitsize-1 {
             // X basis
             if theta[i] { 
                 if r[i] { // 1 is |->
@@ -46,14 +53,14 @@
             }
         }
 
+        Message($"θ: {BoolArrayAsBinaryString(theta)}");
+        Message($"R: {BoolArrayAsBinaryString(r)}");
         Message($"R_z: {BoolArrayAsBinaryString(r_z)}");
         Message($"R_x: {BoolArrayAsBinaryString(r_x)}");
         Message("");
 
-        // let's pick something silly with 8 bit length to encrypt
-        let message = 4; 
-        let binaryMessage = IntAsBoolArray(message, algorithm_size_limit / 2);
-        Message($"Raw message: {BoolArrayAsBinaryString(binaryMessage)}");
+        let binaryMessage = IntAsBoolArray(message, algorithm_bitsize / 2);
+        Message($"Binary message: {BoolArrayAsBinaryString(binaryMessage)}");
 
         // encrypt by doing XOR between the message and r_z
         let encrypted = MappedByIndex((i, x) -> Xor(binaryMessage[i], x), r_z);
@@ -88,7 +95,8 @@
         let decrypted = MappedByIndex((i, x) -> Xor(encrypted[i], x), r_z_from_measurement);
 
         // the decrypted data should be identical to raw message
-        Message($"Decrypted message: {BoolArrayAsBinaryString(decrypted)}");
+        Message($"Decrypted binary message: {BoolArrayAsBinaryString(decrypted)}");
+        Message($"Decrypted message: {BoolArrayAsInt(decrypted)}");
         return decrypted;
     }
 

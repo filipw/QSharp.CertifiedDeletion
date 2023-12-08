@@ -32,19 +32,19 @@
         for i in 0..algorithm_bitsize-1 {
             // X basis
             if theta[i] { 
-                if r[i] { // 1 is |->
+                if r[i] { // 1 is |-⟩
                     X(qubits[i]);
                     H(qubits[i]); 
-                } else { //0 is |+>
+                } else { //0 is |+⟩
                     H(qubits[i]);
                 }
 
                 // save the r value to r_x
                 set r_x += [r[i]]; 
             } else {  // Z basis
-                if r[i] { // 1 is |1>
+                if r[i] { // 1 is |1⟩
                     X(qubits[i]);
-                } else { // 0 is |0>
+                } else { // 0 is |0⟩
                     I(qubits[i]);
                 }
 

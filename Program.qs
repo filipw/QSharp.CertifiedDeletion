@@ -103,7 +103,7 @@
     operation Delete(qubits: Qubit[]) : Bool[] {
         mutable deletion_proof = [];
         for i in 0..Length(qubits)-1 {
-            set deletion_proof += [Measure([PauliX], [qubits[i]]) == One];
+            set deletion_proof += [MResetX(qubits[i]) == One];
         }
 
         return deletion_proof;

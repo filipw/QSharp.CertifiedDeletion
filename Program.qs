@@ -12,7 +12,12 @@
     
 
     @EntryPoint()
-    operation Main(message: Int, decryptFlow: Bool) : Unit {
+    operation Main() : Unit {
+        // in QDK 1.0 the entrypoint cannot have parameters
+        // we have to fake it by having hardcoded data that changes from run to run
+        let message = 4;
+        let decryptFlow = false; // switch to true if necessary
+
         // we can reasonably only simulate this in one shot for messages up to 8 bits
         let message_bitsize = BitSizeI(message);
         Fact(message_bitsize < 8, "We can't simulate for messages of more than 8 bits");
@@ -22,7 +27,7 @@
         Message("");
 
         let theta = CreateRandomBoolArrayWithEqualDistribution(algorithm_bitsize);
-        let r = DrawMany(() => DrawRandomBool(0.5), algorithm_bitsize, ());
+        let r = DrawMany(() => DrawRandomInt(0, 1) == 1, algorithm_bitsize, ());
 
         use qubits = Qubit[algorithm_bitsize];
 
@@ -70,7 +75,7 @@
         if decryptFlow {
             // decrypt flow
             let decrypted = Decrypt(qubits, theta, encrypted);
-            AllEqualityFactB(decrypted, binaryMessage, "The decrypted message is different than the original one!");
+            Fact(decrypted == binaryMessage, "The decrypted message is different than the original one!");
         } else {
             // delete and verify flow
             let deletion_proof = Delete(qubits);
@@ -119,7 +124,7 @@
 
         // now verify the deletion by comparing d_x to r_x - they must be identical
         Message($"R_x from qubits: {BoolArrayAsBinaryString(d_x)}");
-        AllEqualityFactB(d_x, r_x, "R_x obtained from measuring the qubits is different than the original one!");
+        Fact(d_x == r_x, "R_x obtained from measuring the qubits is different than the original one!");
     }
 
     function BoolArrayAsBinaryString(arr : Bool[]) : String {
